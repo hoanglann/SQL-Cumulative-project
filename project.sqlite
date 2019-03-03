@@ -1,0 +1,102 @@
+// LAN NGUYEN, March 3, 2019, SQL cumulative project from Codecademy.
+
+--------------------
+
+DELETE FROM panels 
+WHERE ID = 'ID';
+
+SELECT * 
+FROM panels 
+LIMIT 5;
+
+UPDATE patients 
+SET Status = "active" 
+WHERE ID = 7;
+
+SELECT * 
+FROM patients 
+WHERE ID = 7;
+
+CREATE TABLE inactive_patients
+AS SELECT * 
+    FROM patients 
+    WHERE Status = "inactive";
+    
+DELETE FROM patients 
+WHERE status = "inactive";  
+
+ALTER TABLE patients 
+RENAME TO active_patients;
+
+WITH total_active AS (
+   SELECT COUNT(ID) AS 'active'
+   FROM active_patients
+),
+total_inactive AS (
+   SELECT COUNT(ID) AS 'inactive'
+   FROM inactive_patients
+),
+total_patients AS (
+   SELECT total_active.active + total_inactive.inactive AS 'total'
+   FROM total_active, total_inactive
+)
+SELECT 
+    (total_active.active*100 / total_patients.total) AS 'percent_active', 
+    (total_inactive.inactive*100 / total_patients.total) AS 'percent_inactive'
+FROM total_active, total_inactive, total_patients;
+
+SELECT *
+FROM active_patients 
+WHERE ID = (SELECT MAX(ID) 
+            FROM active_patients);
+
+DELETE FROM active_patients 
+WHERE Name IN 
+(SELECT Name FROM active_patients LIMIT 1);
+SELECT * FROM active_patients WHERE ID = (SELECT max(ID) FROM active_patients);
+
+select patient_id from panels
+group by patient_id
+having count(patient_id) > 1;
+
+alter table panels add column LDL decimal(5, 2);
+
+update panels 
+set ldl = panels.Cholesterol - (panels.HDL + panels.Triglycerides/5);
+
+WITH
+rv AS(
+select Borderline_High from recommended_values
+where lipid = 'LDL'
+)
+select name, ldl, address, phone
+from active_patients, rv
+join panels
+on active_patients.ID = panels.patient_id
+group by ldl, name 
+having ldl >= rv.borderline_high
+order by ldl desc;
+
+WITH
+rv AS(
+select Borderline_High, High
+from recommended_values
+where lipid = 'LDL'
+)
+select count(
+  CASE
+		WHEN
+  (LDL > rv.High)
+  Then LDL 
+  End
+) as High,
+count(
+CASE
+		WHEN
+  (LDL >= rv.Borderline_High and LDL < rv.High)
+  Then LDL 
+  End
+) as Borderline_High
+from panels, rv;
+
+
